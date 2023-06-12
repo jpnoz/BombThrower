@@ -41,6 +41,7 @@ void ABTInteractableSpawnerBase::SpawnInteractable()
 	FVector SpawnLocation = GetActorLocation();
 	FRotator SpawnRotation = FRotator::ZeroRotator;
 	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
 
 	if (SpawnRadius > 0.0f)
 	{
@@ -55,7 +56,7 @@ void ABTInteractableSpawnerBase::SpawnInteractable()
 	InteractableMesh->SetSimulatePhysics(true);
 	InteractableMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
-	FAttachmentTransformRules AttachmentRules = FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true);
+	FAttachmentTransformRules AttachmentRules = FAttachmentTransformRules(EAttachmentRule::KeepWorld, true);
 	InteractableMesh->AttachToComponent(GetRootComponent(), AttachmentRules);
 
 	LaunchInteractable(InteractableMesh);
