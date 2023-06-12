@@ -21,6 +21,7 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "BombThrower|Spawning")
 	void SpawnInteractable();
+	TArray<AActor*> FindSpawnedInteractables();
 	void LaunchInteractable(UStaticMeshComponent* InteractableMesh);
 
 	UPROPERTY(EditAnywhere, Category = "Spawning")

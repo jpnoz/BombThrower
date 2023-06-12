@@ -26,7 +26,24 @@ void ABTInteractableSpawnerBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	GetAttachedActors(SpawnedInteractables);
+	SpawnedInteractables = FindSpawnedInteractables();
+}
+
+TArray<AActor*> ABTInteractableSpawnerBase::FindSpawnedInteractables()
+{
+	ABTGameStateBase* GameState = Cast<ABTGameStateBase>(UGameplayStatics::GetGameState(GetWorld()));
+	TArray<AActor*> OwnedInteractables;
+
+	for (int i = 0; i < GameState->AllInteractables.Num(); i++)
+	{
+		AActor* TargetInteractable = GameState->AllInteractables[i];
+		if (TargetInteractable->Owner == this)
+		{
+			OwnedInteractables.Add(TargetInteractable);
+		}
+	}
+
+	return OwnedInteractables;
 }
 
 void ABTInteractableSpawnerBase::SpawnInteractable()
@@ -55,9 +72,6 @@ void ABTInteractableSpawnerBase::SpawnInteractable()
 	UStaticMeshComponent* InteractableMesh = Cast<UStaticMeshComponent>(SpawnedInteractable->GetRootComponent());
 	InteractableMesh->SetSimulatePhysics(true);
 	InteractableMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-
-	FAttachmentTransformRules AttachmentRules = FAttachmentTransformRules(EAttachmentRule::KeepWorld, true);
-	InteractableMesh->AttachToComponent(GetRootComponent(), AttachmentRules);
 
 	LaunchInteractable(InteractableMesh);
 }

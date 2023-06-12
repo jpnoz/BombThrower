@@ -38,7 +38,7 @@ void ABTEnemyBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	DrawDebugSphere(GetWorld(), GetActorLocation(), BombDetectionRadius, 32, FColor::Yellow, false, 0.1f);
+	//DrawDebugSphere(GetWorld(), GetActorLocation(), BombDetectionRadius, 32, FColor::Yellow, false, 0.1f);
 
 	AddMovementInput(CurrentMovementVector, 1.0f);
 	LastMovementVector -= LastMovementVector * InertiaDecayRate * DeltaTime;
@@ -48,8 +48,8 @@ void ABTEnemyBase::Tick(float DeltaTime)
 		LastMovementVector = FVector::Zero();
 	}
 
-	DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + (500 * CurrentMovementVector), FColor::Red, false, 0.1f);
-	DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + (500 * LastMovementVector), FColor::Blue, false, 0.1f);
+	//DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + (500 * CurrentMovementVector), FColor::Red, false, 0.1f);
+	//DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + (500 * LastMovementVector), FColor::Blue, false, 0.1f);
 }
 
 void ABTEnemyBase::UpdateMovementVector()
