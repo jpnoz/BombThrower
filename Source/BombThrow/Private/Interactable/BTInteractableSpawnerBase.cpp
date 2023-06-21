@@ -14,8 +14,14 @@ ABTInteractableSpawnerBase::ABTInteractableSpawnerBase()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+}
 
+// Called when the game starts or when spawned
+void ABTInteractableSpawnerBase::BeginPlay()
+{
+	Super::BeginPlay();
 
+	SetSpawnParameters(InitialSpawnParameters);
 }
 
 // Called every frame
@@ -87,5 +93,15 @@ void ABTInteractableSpawnerBase::LaunchInteractable(UStaticMeshComponent* Intera
 	}
 
 	InteractableMesh->AddImpulse(SpawnImpulse * InteractableMesh->GetMass());
+}
+
+void ABTInteractableSpawnerBase::SetSpawnParameters(FSpawnerParameters NewSpawnParameters)
+{
+	CurrentSpawnParameters = NewSpawnParameters;
+	OnParametersUpdated();
+}
+
+void ABTInteractableSpawnerBase::OnParametersUpdated_Implementation()
+{
 }
 

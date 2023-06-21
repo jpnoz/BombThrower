@@ -13,25 +13,25 @@ struct FSpawnerParameters
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float SpawnTime;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float SpawnRadius;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 SpawnLimit;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FVector BaseSpawnImpulse;
 
 	UPROPERTY(EditAnywhere)
 	bool bRandomizeSpawnImpulse;
 
-	UPROPERTY(EditAnywhere, meta = (EditCondition = "bRandomizeSpawnImpulse"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "bRandomizeSpawnImpulse"))
 	FVector MinSpawnImpulseVariance;
 
-	UPROPERTY(EditAnywhere, meta = (EditCondition = "bRandomizeSpawnImpulse"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "bRandomizeSpawnImpulse"))
 	FVector MaxSpawnImpulseVariance;
 
 	FSpawnerParameters()
@@ -64,6 +64,13 @@ protected:
 	void SpawnInteractable();
 	TArray<AActor*> FindSpawnedInteractables();
 	void LaunchInteractable(UStaticMeshComponent* InteractableMesh);
+
+	UFUNCTION(BlueprintCallable, Category = "BombThrower|Spawning")
+	void SetSpawnParameters(FSpawnerParameters NewSpawnParameters);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "BombThrower|Spawning")
+	void OnParametersUpdated();
+	void OnParametersUpdated_Implementation();
 
 	UPROPERTY(EditAnywhere, Category = "Spawning")
 	TSubclassOf<AInteractableBase> InteractableToSpawn;
