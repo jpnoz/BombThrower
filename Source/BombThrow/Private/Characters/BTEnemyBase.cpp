@@ -11,6 +11,7 @@
 #include "GameFramework/PlayerState.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 #include "DrawDebugHelpers.h"
 
@@ -21,13 +22,16 @@ ABTEnemyBase::ABTEnemyBase()
 	PrimaryActorTick.bCanEverTick = true;
 
 	BombDetectionRadius = 1500.0f;
-	BombDetectionRate = 0.5f;
+	WallDetectionRadius = 500.0f;
+	PlayerDetectionRadius = 9000.0f;
+	PlayerAimingRadius = 3500.0f;
+
+	PlayerDetectionRate = 0.2f;
+	MovementAdjustmentRate = 0.5f;
+	AimAdjustmentRate = 9.0f;
 	InertiaDecayRate = 1.5f;
 	NewMovementAngleThreshold = 5.0f;
 
-	PlayerDetectionRadius = 3500.0f;
-	PlayerDetectionRate = 0.2f;
-	AimAdjustmentRate = 9.0f;
 	BaseSpawnParameters = FSpawnerParameters();
 	BaseSpawnParameters.BaseSpawnImpulse = FVector::Zero();
 	BaseSpawnParameters.bRandomizeSpawnImpulse = true;
@@ -52,7 +56,12 @@ void ABTEnemyBase::Tick(float DeltaTime)
 
 	//DrawDebugSphere(GetWorld(), GetActorLocation(), BombDetectionRadius, 32, FColor::Yellow, false, 0.1f);
 
-	AddMovementInput(CurrentMovementVector, 1.0f);
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Orange, FString::Printf(TEXT("Speed: %f"), CurrentMovementVector.SquaredLength()));
+	}
+
+	AddMovementInput(CurrentMovementVector, CurrentMovementVector.SquaredLength() / 2.0f);
 	LastMovementVector -= LastMovementVector * InertiaDecayRate * DeltaTime;
 
 	if (LastMovementVector.SquaredLength() < 0.1f)
@@ -60,8 +69,8 @@ void ABTEnemyBase::Tick(float DeltaTime)
 		LastMovementVector = FVector::Zero();
 	}
 
-	//DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + (500 * CurrentMovementVector), FColor::Red, false, 0.1f);
-	//DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + (500 * LastMovementVector), FColor::Blue, false, 0.1f);
+	DrawDebugLine(GetWorld(), GetActorLocation() + FVector(0.0f, 0.0f, 50.0f), GetActorLocation() + (500 * CurrentMovementVector), FColor::Red, false, 0.1f);
+	DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + (500 * LastMovementVector), FColor::Blue, false, 0.1f);
 	//DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + CurrentAimVector, FColor::Green, false, 0.1f);
 }
 
@@ -87,30 +96,65 @@ FVector ABTEnemyBase::CalculateMovementVector()
 {
 	FVector NewMovementVector = FVector::Zero();
 	FVector LateralMovementVector = FVector::Zero();
+
+	FVector BombMovementVector = CalculateBombMovementVector();
+
+	NewMovementVector = BombMovementVector;
+	//NewMovementVector.Normalize();
+
+	return NewMovementVector;
+}
+
+void ABTEnemyBase::UpdateAimVector()
+{
+	CurrentAimVector = CalculateAimVector();
+}
+
+FVector ABTEnemyBase::CalculateAimVector()
+{
+	FVector NewAimVector = FindClosestPlayerPosition();
+
+	// Limit Throwing Vector to enemy's max throw force
+	if (NewAimVector.SquaredLength() > ThrowForce * ThrowForce)
+	{
+		NewAimVector.Normalize();
+		NewAimVector *= ThrowForce;
+	}
+	
+	NewAimVector += FVector(0, 0, ThrowForce);
+	return NewAimVector;
+}
+
+FVector ABTEnemyBase::CalculateBombMovementVector()
+{
+	FVector BombMovementVector = FVector::Zero();
+	FVector LateralMovementVector = FVector::Zero();
 	TArray<FVector> BombToEnemyPositions = FindBombPositions();
 	int32 NumBombThreats = BombToEnemyPositions.Num();
 
 	for (int i = 0; i < NumBombThreats; i++)
 	{
-		NewMovementVector += BombToEnemyPositions[i];
+		// Adjust each vector from bomb to enemy inversely proportional to distance
+		FVector CurrentBombVector = BombToEnemyPositions[i];
+		float VectorAdjustmentFactor = 1.0f - (CurrentBombVector.SquaredLength() / (BombDetectionRadius * BombDetectionRadius));
+
+		CurrentBombVector.Normalize();
+		BombMovementVector += CurrentBombVector * VectorAdjustmentFactor;
 	}
 
-	if (NumBombThreats >= 2 && NewMovementVector.SquaredLength() < 1)
+	if (NumBombThreats >= 2 && BombMovementVector.SquaredLength() < 1)
 	{
-		LateralMovementVector = FVector::CrossProduct(NewMovementVector, GetActorUpVector()) * (1 - NewMovementVector.Length());
+		LateralMovementVector = FVector::CrossProduct(BombMovementVector, GetActorUpVector()) * BombMovementVector.Length();
 	}
 
-	NewMovementVector = (NewMovementVector + LateralMovementVector) * FVector(1.0f, 1.0f, 0.0f);
-	NewMovementVector.Normalize();
-
-
-	return NewMovementVector;
+	BombMovementVector = (BombMovementVector + LateralMovementVector) * FVector(1.0f, 1.0f, 0.0f);
+	return BombMovementVector;
 }
 
 TArray<FVector> ABTEnemyBase::FindBombPositions()
 {
 	TArray<FVector> BombToEnemyVectors;
-	
+
 	// Sphere Trace for all actors in detection radius
 	// Instead of GetAllActorsWithTag() to prevent crash when too many bombs exist at once
 	for (int i = 0; i < GameState->AllInteractables.Num(); i++)
@@ -135,12 +179,7 @@ TArray<FVector> ABTEnemyBase::FindBombPositions()
 	return BombToEnemyVectors;
 }
 
-void ABTEnemyBase::UpdateAimVector()
-{
-	CurrentAimVector = CalculateAimVector();
-}
-
-FVector ABTEnemyBase::CalculateAimVector()
+FVector ABTEnemyBase::FindClosestPlayerPosition()
 {
 	TArray<APlayerState*> AllPlayers = GameState->PlayerArray;
 
@@ -150,7 +189,7 @@ FVector ABTEnemyBase::CalculateAimVector()
 		APlayerState* PlayerToCheck = AllPlayers[i];
 
 		FVector DistanceToPlayer = PlayerToCheck->GetPawn()->GetActorLocation() - GetActorLocation();
-		
+
 		if (DistanceToPlayer.SquaredLength() > (PlayerDetectionRadius * PlayerDetectionRadius))
 		{
 			continue;
@@ -162,13 +201,12 @@ FVector ABTEnemyBase::CalculateAimVector()
 		}
 	}
 
-	FVector NewAimVector = ClosestEnemyToPlayerVector;
-	if (ClosestEnemyToPlayerVector.SquaredLength() > ThrowForce * ThrowForce)
-	{
-		NewAimVector.Normalize();
-		NewAimVector *= ThrowForce;
-	}
+	return ClosestEnemyToPlayerVector;
+}
 
-	NewAimVector += FVector(0, 0, ThrowForce);
-	return NewAimVector;
+bool ABTEnemyBase::bSphereTrace(FVector StartLocation, FVector EndLocation, TArray<FHitResult>& TraceResults)
+{
+	FCollisionShape TraceSphere = FCollisionShape::MakeSphere(WallDetectionRadius);
+	bool bSurfaceDetected = GetWorld()->SweepMultiByChannel(TraceResults, StartLocation, EndLocation, GetActorRotation().Quaternion(), ECC_Visibility, TraceSphere);
+	return bSurfaceDetected;
 }

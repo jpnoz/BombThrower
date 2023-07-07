@@ -21,22 +21,32 @@ public:
 	float BombDetectionRadius;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception")
-	float BombDetectionRate;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Movement", meta = (UIMin = 0.1, UIMax = 10.0))
-	float InertiaDecayRate;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Movement", meta = (UIMin = 1.0, UIMax = 359.0))
-	float NewMovementAngleThreshold;
+	float WallDetectionRadius;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception")
 	float PlayerDetectionRadius;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception")
+	float PlayerAimingRadius;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception")
 	float PlayerDetectionRate;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception")
+	float MovementAdjustmentRate;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception")
 	float AimAdjustmentRate;
+
+	// How quickly the last movement vector fades when a new one is calculated,
+	// in percent / second
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Movement", meta = (UIMin = 0.1, UIMax = 10.0))
+	float InertiaDecayRate;
+
+	// How large of a variance a new movement vector needs to have (in degrees)
+	// from last movement vector to be considered "new"
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Movement", meta = (UIMin = 1.0, UIMax = 359.0))
+	float NewMovementAngleThreshold;
 
 	// NOTE: Editing Base Spawn Impulse has no effect
 	UPROPERTY(EditAnywhere, Category = "Gameplay|Spawning")
@@ -55,11 +65,17 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Enemy|Movement")
 	void UpdateMovementVector();
 	FVector CalculateMovementVector();
-	TArray<FVector> FindBombPositions();
 
 	UFUNCTION(BlueprintCallable, Category = "Enemy|Aim")
 	void UpdateAimVector();
 	FVector CalculateAimVector();
+
+	FVector CalculateBombMovementVector();
+
+	TArray<FVector> FindBombPositions();
+	FVector FindClosestPlayerPosition();
+
+	bool bSphereTrace(FVector StartLocation, FVector EndLocation, TArray<FHitResult>& TraceResults);
 
 	class ABTGameStateBase* GameState;
 	FVector LastMovementVector;
