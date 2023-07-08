@@ -70,12 +70,13 @@ protected:
 	void UpdateAimVector();
 	FVector CalculateAimVector();
 
-	FVector CalculateBombMovementVector();
+	FVector CalculateBombAvoidance();
+	FVector CalculateWallAvoidance();
 
 	TArray<FVector> FindBombPositions();
 	FVector FindClosestPlayerPosition();
 
-	bool bSphereTrace(FVector StartLocation, FVector EndLocation, TArray<FHitResult>& TraceResults);
+	bool bSphereTrace(FVector Location, FVector EndLocation, TArray<FHitResult>& TraceResults);
 
 	class ABTGameStateBase* GameState;
 	FVector LastMovementVector;

@@ -54,12 +54,12 @@ void ABTEnemyBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	//DrawDebugSphere(GetWorld(), GetActorLocation(), BombDetectionRadius, 32, FColor::Yellow, false, 0.1f);
+	DrawDebugSphere(GetWorld(), GetActorLocation(), WallDetectionRadius, 32, FColor::Yellow, false, 0.1f);
 
-	if (GEngine)
+	/*if (GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Orange, FString::Printf(TEXT("Speed: %f"), CurrentMovementVector.SquaredLength()));
-	}
+	}*/
 
 	AddMovementInput(CurrentMovementVector, CurrentMovementVector.SquaredLength() / 2.0f);
 	LastMovementVector -= LastMovementVector * InertiaDecayRate * DeltaTime;
@@ -97,9 +97,10 @@ FVector ABTEnemyBase::CalculateMovementVector()
 	FVector NewMovementVector = FVector::Zero();
 	FVector LateralMovementVector = FVector::Zero();
 
-	FVector BombMovementVector = CalculateBombMovementVector();
+	FVector BombMovementVector = CalculateBombAvoidance();
+	FVector WallMovementVector = CalculateWallAvoidance();
 
-	NewMovementVector = BombMovementVector;
+	NewMovementVector = BombMovementVector + WallMovementVector;
 	//NewMovementVector.Normalize();
 
 	return NewMovementVector;
@@ -125,7 +126,7 @@ FVector ABTEnemyBase::CalculateAimVector()
 	return NewAimVector;
 }
 
-FVector ABTEnemyBase::CalculateBombMovementVector()
+FVector ABTEnemyBase::CalculateBombAvoidance()
 {
 	FVector BombMovementVector = FVector::Zero();
 	FVector LateralMovementVector = FVector::Zero();
@@ -149,6 +150,35 @@ FVector ABTEnemyBase::CalculateBombMovementVector()
 
 	BombMovementVector = (BombMovementVector + LateralMovementVector) * FVector(1.0f, 1.0f, 0.0f);
 	return BombMovementVector;
+}
+
+FVector ABTEnemyBase::CalculateWallAvoidance()
+{
+	FVector WallMovementVector = FVector::Zero();
+	FVector LateralMovementVector = FVector::Zero();
+	TArray<FHitResult> HitObstacles;
+	int32 NumObstacles = 0;
+
+	if (bSphereTrace(GetActorLocation(), GetActorLocation() + (100 * GetActorForwardVector()), HitObstacles))
+	{
+		NumObstacles = HitObstacles.Num();
+	}
+
+	for (int i = 0; i < NumObstacles; i++)
+	{
+		FHitResult CurrentObstacle = HitObstacles[i];
+
+		FVector HitLocation = CurrentObstacle.ImpactPoint;
+		FVector EnemyToObstacleVector = HitLocation - GetActorLocation();
+		
+		FVector HitDirection = CurrentObstacle.ImpactNormal;
+		HitDirection.Normalize();
+
+		WallMovementVector += HitDirection * (WallDetectionRadius / 2.0f);
+		DrawDebugLine(GetWorld(), HitLocation, HitLocation + (HitDirection * 100), FColor::Emerald, false, 2.0f);
+	}
+
+	return WallMovementVector;
 }
 
 TArray<FVector> ABTEnemyBase::FindBombPositions()
