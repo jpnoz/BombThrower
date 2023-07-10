@@ -23,11 +23,23 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception")
 	float WallDetectionRadius;
 
+	// Maximum deviation from vertical that a surface can be to be considered a wall
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception", meta = (UIMin = 0.0, UIMax = 90.0))
+	float WallAngleThreshold;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception")
 	float PlayerDetectionRadius;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception")
 	float PlayerAimingRadius;
+
+	// Multiplier for bomb avoidance vectors
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception")
+	float BombMovementWeight;
+	
+	// Multiplier for obstacle avoidance vectors
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception")
+	float WallMovementWeight;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception")
 	float PlayerDetectionRate;
@@ -37,6 +49,10 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception")
 	float AimAdjustmentRate;
+
+	// Minimum magnitude a movement vector must be to move at full speed
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Movement")
+	float MaxWalkSpeedThreshold;
 
 	// How quickly the last movement vector fades when a new one is calculated,
 	// in percent / second

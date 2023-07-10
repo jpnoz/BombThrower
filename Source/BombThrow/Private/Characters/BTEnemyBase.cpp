@@ -23,12 +23,18 @@ ABTEnemyBase::ABTEnemyBase()
 
 	BombDetectionRadius = 1500.0f;
 	WallDetectionRadius = 500.0f;
+	WallAngleThreshold = 15.0f;
 	PlayerDetectionRadius = 9000.0f;
 	PlayerAimingRadius = 3500.0f;
+
+	BombMovementWeight = 1.0f;
+	WallMovementWeight = 3.0f;
 
 	PlayerDetectionRate = 0.2f;
 	MovementAdjustmentRate = 0.5f;
 	AimAdjustmentRate = 9.0f;
+
+	MaxWalkSpeedThreshold = 0.2f;
 	InertiaDecayRate = 1.5f;
 	NewMovementAngleThreshold = 5.0f;
 
@@ -54,14 +60,14 @@ void ABTEnemyBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	DrawDebugSphere(GetWorld(), GetActorLocation(), WallDetectionRadius, 32, FColor::Yellow, false, 0.1f);
+	//DrawDebugSphere(GetWorld(), GetActorLocation(), WallDetectionRadius, 32, FColor::Yellow, false, 0.1f);
 
 	/*if (GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Orange, FString::Printf(TEXT("Speed: %f"), CurrentMovementVector.SquaredLength()));
 	}*/
 
-	AddMovementInput(CurrentMovementVector, CurrentMovementVector.SquaredLength() / 2.0f);
+	AddMovementInput(CurrentMovementVector, CurrentMovementVector.SquaredLength() / MaxWalkSpeedThreshold * MaxWalkSpeedThreshold);
 	LastMovementVector -= LastMovementVector * InertiaDecayRate * DeltaTime;
 
 	if (LastMovementVector.SquaredLength() < 0.1f)
@@ -97,8 +103,13 @@ FVector ABTEnemyBase::CalculateMovementVector()
 	FVector NewMovementVector = FVector::Zero();
 	FVector LateralMovementVector = FVector::Zero();
 
-	FVector BombMovementVector = CalculateBombAvoidance();
-	FVector WallMovementVector = CalculateWallAvoidance();
+	FVector BombMovementVector = CalculateBombAvoidance() * BombMovementWeight;
+	FVector WallMovementVector = CalculateWallAvoidance() * WallMovementWeight;
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Orange, FString::Printf(TEXT("%f / %f"), BombMovementVector.SquaredLength(), WallMovementVector.SquaredLength()));
+	}
 
 	NewMovementVector = BombMovementVector + WallMovementVector;
 	//NewMovementVector.Normalize();
@@ -143,7 +154,7 @@ FVector ABTEnemyBase::CalculateBombAvoidance()
 		BombMovementVector += CurrentBombVector * VectorAdjustmentFactor;
 	}
 
-	if (NumBombThreats >= 2 && BombMovementVector.SquaredLength() < 1)
+	if (NumBombThreats >= 2 && BombMovementVector.SquaredLength() < 1.0f)
 	{
 		LateralMovementVector = FVector::CrossProduct(BombMovementVector, GetActorUpVector()) * BombMovementVector.Length();
 	}
@@ -168,13 +179,28 @@ FVector ABTEnemyBase::CalculateWallAvoidance()
 	{
 		FHitResult CurrentObstacle = HitObstacles[i];
 
+		// Ignore collisions with bombs
+		if (CurrentObstacle.GetActor()->IsA(ABTBombBase::StaticClass()))
+		{
+			continue;
+		}
+
 		FVector HitLocation = CurrentObstacle.ImpactPoint;
 		FVector EnemyToObstacleVector = HitLocation - GetActorLocation();
 		
-		FVector HitDirection = CurrentObstacle.ImpactNormal;
-		HitDirection.Normalize();
+		FVector HitDirection = CurrentObstacle.ImpactNormal * FVector(1.0f, 1.0f, 0.0f);
+		
+		// Angle of normal from horizontal must be within angle range
+		if (HitDirection.SquaredLength() < UKismetMathLibrary::DegCos(WallAngleThreshold))
+		{
+			continue;
+		}
 
-		WallMovementVector += HitDirection * (WallDetectionRadius / 2.0f);
+		float VectorAdjustmentFactor = 1.0f - (EnemyToObstacleVector.SquaredLength() / (WallDetectionRadius * WallDetectionRadius));
+		HitDirection.Normalize();
+		WallMovementVector += HitDirection * VectorAdjustmentFactor;
+
+		DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + EnemyToObstacleVector, FColor::Orange, false, 2.0f);
 		DrawDebugLine(GetWorld(), HitLocation, HitLocation + (HitDirection * 100), FColor::Emerald, false, 2.0f);
 	}
 
