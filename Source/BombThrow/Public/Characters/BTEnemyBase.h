@@ -21,22 +21,48 @@ public:
 	float BombDetectionRadius;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception")
-	float BombDetectionRate;
+	float WallDetectionRadius;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Movement", meta = (UIMin = 0.1, UIMax = 10.0))
-	float InertiaDecayRate;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Movement", meta = (UIMin = 1.0, UIMax = 359.0))
-	float NewMovementAngleThreshold;
+	// Maximum deviation from vertical that a surface can be to be considered a wall
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception", meta = (UIMin = 0.0, UIMax = 90.0))
+	float WallAngleThreshold;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception")
 	float PlayerDetectionRadius;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception")
+	float PlayerAimingRadius;
+
+	// Multiplier for bomb avoidance vectors
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception")
+	float BombMovementWeight;
+	
+	// Multiplier for obstacle avoidance vectors
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception")
+	float WallMovementWeight;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception")
 	float PlayerDetectionRate;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception")
+	float MovementAdjustmentRate;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception")
 	float AimAdjustmentRate;
+
+	// Minimum magnitude a movement vector must be to move at full speed
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Movement")
+	float MaxWalkSpeedThreshold;
+
+	// How quickly the last movement vector fades when a new one is calculated,
+	// in percent / second
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Movement", meta = (UIMin = 0.1, UIMax = 10.0))
+	float InertiaDecayRate;
+
+	// How large of a variance a new movement vector needs to have (in degrees)
+	// from last movement vector to be considered "new"
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Movement", meta = (UIMin = 1.0, UIMax = 359.0))
+	float NewMovementAngleThreshold;
 
 	// NOTE: Editing Base Spawn Impulse has no effect
 	UPROPERTY(EditAnywhere, Category = "Gameplay|Spawning")
@@ -55,11 +81,22 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Enemy|Movement")
 	void UpdateMovementVector();
 	FVector CalculateMovementVector();
-	TArray<FVector> FindBombPositions();
 
 	UFUNCTION(BlueprintCallable, Category = "Enemy|Aim")
 	void UpdateAimVector();
 	FVector CalculateAimVector();
+
+	FVector CalculateBombAvoidance();
+	FVector CalculateWallAvoidance();
+
+	TArray<FVector> FindBombPositions();
+	FVector FindClosestPlayerDirection(float MaxRange);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Enemy|Movement")
+	void MoveToPlayer(FVector PlayerPosition);
+	void MoveToPlayer_Implementation(FVector PlayerPosition);
+
+	bool bSphereTrace(FVector Location, FVector EndLocation, TArray<FHitResult>& TraceResults);
 
 	class ABTGameStateBase* GameState;
 	FVector LastMovementVector;

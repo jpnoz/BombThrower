@@ -14,6 +14,9 @@ struct FSpawnerParameters
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bCanSpawn;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float SpawnTime;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -36,6 +39,7 @@ struct FSpawnerParameters
 
 	FSpawnerParameters()
 	{
+		bCanSpawn = true;
 		SpawnTime = 5.0f;
 		SpawnRadius = 0.0f;
 		SpawnLimit = 1;
