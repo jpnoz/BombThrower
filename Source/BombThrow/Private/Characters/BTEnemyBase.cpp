@@ -39,8 +39,14 @@ ABTEnemyBase::ABTEnemyBase()
 	NewMovementAngleThreshold = 5.0f;
 
 	BaseSpawnParameters = FSpawnerParameters();
+	BaseSpawnParameters.bCanSpawn = true;
+	BaseSpawnParameters.SpawnTime = 0.2f;
+	BaseSpawnParameters.SpawnRadius = 0.0f;
+	BaseSpawnParameters.SpawnLimit = 3;
 	BaseSpawnParameters.BaseSpawnImpulse = FVector::Zero();
 	BaseSpawnParameters.bRandomizeSpawnImpulse = true;
+	BaseSpawnParameters.MinSpawnImpulseVariance = FVector(-100.0f, -100.0f, 0.0f);
+	BaseSpawnParameters.MaxSpawnImpulseVariance = FVector(100.0f, 100.0f, 0.0f);
 
 	ThrowForce = 2000.0f;
 }
@@ -60,7 +66,7 @@ void ABTEnemyBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	//DrawDebugSphere(GetWorld(), GetActorLocation(), WallDetectionRadius, 32, FColor::Yellow, false, 0.1f);
+	//DrawDebugSphere(GetWorld(), GetActorLocation(), PlayerAimingRadius, 32, FColor::Yellow, false, 0.1f);
 
 	/*if (GEngine)
 	{
@@ -75,8 +81,8 @@ void ABTEnemyBase::Tick(float DeltaTime)
 		LastMovementVector = FVector::Zero();
 	}
 
-	DrawDebugLine(GetWorld(), GetActorLocation() + FVector(0.0f, 0.0f, 50.0f), GetActorLocation() + (500 * CurrentMovementVector), FColor::Red, false, 0.1f);
-	DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + (500 * LastMovementVector), FColor::Blue, false, 0.1f);
+	//DrawDebugLine(GetWorld(), GetActorLocation() + FVector(0.0f, 0.0f, 50.0f), GetActorLocation() + (500 * CurrentMovementVector), FColor::Red, false, 0.1f);
+	//DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + (500 * LastMovementVector), FColor::Blue, false, 0.1f);
 	//DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + CurrentAimVector, FColor::Green, false, 0.1f);
 }
 
@@ -96,6 +102,15 @@ void ABTEnemyBase::UpdateMovementVector()
 	{
 		CurrentMovementVector += LastMovementVector;
 	}
+
+	// If CurrentMovement is still 0
+	// Move toward player
+	if (CurrentMovementVector.Equals(FVector::Zero()))
+	{
+		FVector TargetPlayerPosition = GetActorLocation() + FindClosestPlayerDirection(PlayerDetectionRadius);
+		//DrawDebugSphere(GetWorld(), TargetPlayerPosition, 150.0f, 32, FColor::Orange, false, 2.0f);
+		MoveToPlayer(TargetPlayerPosition);
+	}
 }
 
 FVector ABTEnemyBase::CalculateMovementVector()
@@ -106,10 +121,10 @@ FVector ABTEnemyBase::CalculateMovementVector()
 	FVector BombMovementVector = CalculateBombAvoidance() * BombMovementWeight;
 	FVector WallMovementVector = CalculateWallAvoidance() * WallMovementWeight;
 
-	if (GEngine)
+	/*if (GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Orange, FString::Printf(TEXT("%f / %f"), BombMovementVector.SquaredLength(), WallMovementVector.SquaredLength()));
-	}
+	}*/
 
 	NewMovementVector = BombMovementVector + WallMovementVector;
 	//NewMovementVector.Normalize();
@@ -119,12 +134,22 @@ FVector ABTEnemyBase::CalculateMovementVector()
 
 void ABTEnemyBase::UpdateAimVector()
 {
+	CurrentSpawnParameters.bCanSpawn = true;
+
 	CurrentAimVector = CalculateAimVector();
+	if (CurrentAimVector.Equals(FVector::Zero()))
+	{
+		CurrentSpawnParameters.bCanSpawn = false;
+	}
+
+	CurrentSpawnParameters.BaseSpawnImpulse = CurrentAimVector;
+
+	//DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + CurrentAimVector, FColor::Cyan, false, 1.0f);
 }
 
 FVector ABTEnemyBase::CalculateAimVector()
 {
-	FVector NewAimVector = FindClosestPlayerPosition();
+	FVector NewAimVector = FindClosestPlayerDirection(PlayerAimingRadius);
 
 	// Limit Throwing Vector to enemy's max throw force
 	if (NewAimVector.SquaredLength() > ThrowForce * ThrowForce)
@@ -132,8 +157,17 @@ FVector ABTEnemyBase::CalculateAimVector()
 		NewAimVector.Normalize();
 		NewAimVector *= ThrowForce;
 	}
+
+	if (NewAimVector.SquaredLength() > PlayerAimingRadius * PlayerAimingRadius)
+	{
+		NewAimVector = FVector::Zero();
+	}
 	
-	NewAimVector += FVector(0, 0, ThrowForce);
+	if (!NewAimVector.Equals(FVector::Zero()))
+	{
+		NewAimVector += FVector(0, 0, ThrowForce);
+	}
+	
 	return NewAimVector;
 }
 
@@ -235,7 +269,7 @@ TArray<FVector> ABTEnemyBase::FindBombPositions()
 	return BombToEnemyVectors;
 }
 
-FVector ABTEnemyBase::FindClosestPlayerPosition()
+FVector ABTEnemyBase::FindClosestPlayerDirection(float MaxRange)
 {
 	TArray<APlayerState*> AllPlayers = GameState->PlayerArray;
 
@@ -246,10 +280,12 @@ FVector ABTEnemyBase::FindClosestPlayerPosition()
 
 		FVector DistanceToPlayer = PlayerToCheck->GetPawn()->GetActorLocation() - GetActorLocation();
 
-		if (DistanceToPlayer.SquaredLength() > (PlayerDetectionRadius * PlayerDetectionRadius))
+		if (DistanceToPlayer.SquaredLength() > (MaxRange * MaxRange))
 		{
 			continue;
 		}
+
+		//DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + DistanceToPlayer, FColor::Cyan, false, 1.0f);
 
 		if (i == 0 || DistanceToPlayer.SquaredLength() < ClosestEnemyToPlayerVector.SquaredLength())
 		{
@@ -258,6 +294,11 @@ FVector ABTEnemyBase::FindClosestPlayerPosition()
 	}
 
 	return ClosestEnemyToPlayerVector;
+}
+
+void ABTEnemyBase::MoveToPlayer_Implementation(FVector PlayerPosition)
+{
+	//DrawDebugSphere(GetWorld(), PlayerPosition, 150.0f, 32, FColor::Orange, false, 2.0f);
 }
 
 bool ABTEnemyBase::bSphereTrace(FVector StartLocation, FVector EndLocation, TArray<FHitResult>& TraceResults)

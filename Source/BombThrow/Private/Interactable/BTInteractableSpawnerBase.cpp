@@ -51,6 +51,11 @@ TArray<AActor*> ABTInteractableSpawnerBase::FindSpawnedInteractables()
 
 void ABTInteractableSpawnerBase::SpawnInteractable()
 {
+	if (!CurrentSpawnParameters.bCanSpawn)
+	{
+		return;
+	}
+
 	ABTGameStateBase* GameState = Cast<ABTGameStateBase>(UGameplayStatics::GetGameState(GetWorld()));
 
 	if (GameState->AllInteractables.Num() >= GameState->MaxInteractables || SpawnedInteractables.Num() >= CurrentSpawnParameters.SpawnLimit)

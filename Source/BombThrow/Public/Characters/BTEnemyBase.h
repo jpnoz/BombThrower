@@ -90,7 +90,11 @@ protected:
 	FVector CalculateWallAvoidance();
 
 	TArray<FVector> FindBombPositions();
-	FVector FindClosestPlayerPosition();
+	FVector FindClosestPlayerDirection(float MaxRange);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Enemy|Movement")
+	void MoveToPlayer(FVector PlayerPosition);
+	void MoveToPlayer_Implementation(FVector PlayerPosition);
 
 	bool bSphereTrace(FVector Location, FVector EndLocation, TArray<FHitResult>& TraceResults);
 
