@@ -24,19 +24,19 @@ ABTEnemyBase::ABTEnemyBase()
 	BombDetectionRadius = 1500.0f;
 	WallDetectionRadius = 500.0f;
 	WallAngleThreshold = 15.0f;
-	PlayerDetectionRadius = 9000.0f;
+	PlayerDetectionRadius = 6500.0f;
 	PlayerAimingRadius = 3500.0f;
 
 	BombMovementWeight = 1.0f;
 	WallMovementWeight = 3.0f;
 
-	PlayerDetectionRate = 0.2f;
+	PlayerDetectionRate = 0.5f;
 	MovementAdjustmentRate = 0.5f;
-	AimAdjustmentRate = 9.0f;
+	AimAdjustmentRate = 1.0f;
 
 	MaxWalkSpeedThreshold = 0.2f;
 	InertiaDecayRate = 1.5f;
-	NewMovementAngleThreshold = 5.0f;
+	NewMovementAngleThreshold = 90.0f;
 
 	BaseSpawnParameters = FSpawnerParameters();
 	BaseSpawnParameters.bCanSpawn = true;
@@ -134,6 +134,12 @@ FVector ABTEnemyBase::CalculateMovementVector()
 
 void ABTEnemyBase::UpdateAimVector()
 {
+	if (HealthComponent->CurrentHealth <= 0)
+	{
+		CurrentSpawnParameters.bCanSpawn = false;
+		return;
+	}
+	
 	CurrentSpawnParameters.bCanSpawn = true;
 
 	CurrentAimVector = CalculateAimVector();
@@ -234,8 +240,8 @@ FVector ABTEnemyBase::CalculateWallAvoidance()
 		HitDirection.Normalize();
 		WallMovementVector += HitDirection * VectorAdjustmentFactor;
 
-		DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + EnemyToObstacleVector, FColor::Orange, false, 2.0f);
-		DrawDebugLine(GetWorld(), HitLocation, HitLocation + (HitDirection * 100), FColor::Emerald, false, 2.0f);
+		//DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + EnemyToObstacleVector, FColor::Orange, false, 2.0f);
+		//DrawDebugLine(GetWorld(), HitLocation, HitLocation + (HitDirection * 100), FColor::Emerald, false, 2.0f);
 	}
 
 	return WallMovementVector;
