@@ -25,6 +25,8 @@ public:
 	bool bLineTrace_Implementation(FVector StartLocation, FVector EndLocation, FHitResult& TraceResult);
 
 	// Movement values
+
+	// Rotation speed, in degrees/second
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerMovement")
 	float BaseTurnRate;
 

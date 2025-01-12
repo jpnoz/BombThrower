@@ -37,6 +37,25 @@ void UBTHealthComponent::TakeDamage(float Damage)
 
 void UBTHealthComponent::KillCharacter()
 {
+	UE_LOG(LogTemp, Warning, TEXT("Character has died"));
+	// Get all Children that make up Character Model
 	UCapsuleComponent* CharacterRoot = Cast<UCapsuleComponent>(GetOwner()->GetRootComponent());
-	CharacterRoot->SetSimulatePhysics(true);
+	TArray<USceneComponent*> CharacterMeshes;
+	CharacterRoot->GetChildrenComponents(false, CharacterMeshes);
+
+	// Loop through each Child, focusing on Meshes
+	for (int i = 0; i < CharacterMeshes.Num(); i++)
+	{
+		// Enable Physics Simulation for all Static/Skeletal Meshes found
+		USceneComponent* ChildToCheck = CharacterMeshes[i];
+		if (ChildToCheck->IsA(UStaticMeshComponent::StaticClass()))
+		{
+			UStaticMeshComponent* StaticMesh = Cast<UStaticMeshComponent>(ChildToCheck);
+			StaticMesh->SetSimulatePhysics(true);
+		}
+		else if (ChildToCheck->IsA(USkeletalMeshComponent::StaticClass()))
+		{
+			CharacterRoot->SetSimulatePhysics(true);
+		}
+	}
 }

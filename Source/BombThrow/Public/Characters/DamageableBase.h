@@ -3,9 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Moveable/MoveableBase.h"
 #include "GameFramework/Character.h"
 #include "DamageableBase.generated.h"
 
+// TO DO: Find a way to have ADamageableBase extend from AMoveableBase
 UCLASS()
 class BOMBTHROW_API ADamageableBase : public ACharacter
 {
@@ -17,4 +19,5 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Damageable")
 	class UBTHealthComponent* HealthComponent;
+
 };
