@@ -27,7 +27,7 @@ ABTBombBase::ABTBombBase()
 
 	BaseBombColor = FLinearColor::FLinearColor(0.017f, 0.017f, 0.017f, 1.0f);
 	FinalBombColor = FLinearColor::FLinearColor(0.5f, 0.017f, 0.017f, 1.0f);
-
+	
 	ParticleRenderDistance = 10000.0f;
 	bShouldSpawnParticle = false;
 
@@ -117,10 +117,15 @@ void ABTBombBase::Explode()
 
 void ABTBombBase::PushActorsInRadius()
 {
-	// Separate Damageable Actors from other Actors
+	// Separate Moveable and Damageable Actors from other Actors
 	// For rendering particles and to handle damage correctly
+	TArray<AActor*> AllMoveables;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AMoveableBase::StaticClass(), AllMoveables);
+
 	TArray<AActor*> AllDamageables;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ADamageableBase::StaticClass(), AllDamageables);
+
+	AllMoveables += AllDamageables;
 
 	// Sphere Trace for all actors in blast radius
 	// Instead of GetAllActorsWithTag() to prevent crash when too many bombs exist at once
@@ -157,16 +162,16 @@ void ABTBombBase::PushActorsInRadius()
 		ActorMesh->AddImpulse(ExplosionImpulse);
 	}
 
-	// Checking Damageables
-	for (int i = 0; i < AllDamageables.Num(); i++)
+	// Checking Moveables and Damageables
+	for (int i = 0; i < AllMoveables.Num(); i++)
 	{
-		AActor* ActorToCheck = AllDamageables[i];
+		AActor* ActorToCheck = AllMoveables[i];
 		FVector DistanceToActor = ActorToCheck->GetActorLocation() - GetActorLocation();
 		
 		if (DistanceToActor.SquaredLength() <= BlastRadius * BlastRadius)
 		{
 			bShouldSpawnParticle = true;
-			PushDamageable(ActorToCheck, DistanceToActor);
+			PushMoveable(ActorToCheck, DistanceToActor);
 			continue;
 		}
 
@@ -177,17 +182,20 @@ void ABTBombBase::PushActorsInRadius()
 	}
 }
 
-void ABTBombBase::PushDamageable(AActor* DamageableActor, FVector VectorToActor)
+void ABTBombBase::PushMoveable(AActor* MoveableActor, FVector VectorToActor)
 {
-	float CalculatedDamage = CalculateDamage(VectorToActor);
-	DamageableHit(DamageableActor, CalculatedDamage);
-	
-	UCapsuleComponent* CapsuleComp = Cast<UCapsuleComponent>(DamageableActor->GetRootComponent());
-	if (CapsuleComp->IsSimulatingPhysics())
+	if (MoveableActor->IsA(ADamageableBase::StaticClass()))
+	{
+		float CalculatedDamage = CalculateDamage(VectorToActor);
+		DamageableHit(MoveableActor, CalculatedDamage);
+	}
+
+	UPrimitiveComponent* MeshComp = Cast<UPrimitiveComponent>(MoveableActor->GetRootComponent());
+	if (MeshComp->IsSimulatingPhysics())
 	{
 		VectorToActor.Normalize(1.0f);
-		FVector ExplosionImpulse = (VectorToActor + FVector::UnitZ() * 0.5f) * ExplosionForce * CapsuleComp->GetMass();
-		CapsuleComp->AddImpulse(ExplosionImpulse);
+		FVector ExplosionImpulse = (VectorToActor + FVector::UnitZ() * 0.5f) * ExplosionForce * MeshComp->GetMass();
+		MeshComp->AddImpulse(ExplosionImpulse);
 	}
 }
 

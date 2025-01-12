@@ -5,6 +5,7 @@
 
 #include "GameFramework/PawnMovementComponent.h"
 
+#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 
 // Sets default values for this component's properties
@@ -55,7 +56,9 @@ void UBTMovementComponent::Rotate(const float Value)
 	if (Owner->GetController() && Value != 0.0f)
 	{
 		//UE_LOG(LogTemp, Warning, TEXT("%f"), Value * BaseTurnRate);
-		FRotator NewYaw(0, Value * BaseTurnRate, 0);
+		
+		// Getting delta seconds outside of tick might not be good
+		FRotator NewYaw(0, Value * BaseTurnRate * UGameplayStatics::GetWorldDeltaSeconds(GetWorld()), 0);
 		Owner->AddActorLocalRotation(NewYaw, false, 0, ETeleportType::None);
 	}
 }

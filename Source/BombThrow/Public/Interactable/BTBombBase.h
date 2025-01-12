@@ -25,7 +25,7 @@ protected:
 	void CountDown(float DeltaTime);
 	void Explode();
 	void PushActorsInRadius();
-	void PushDamageable(AActor* DamageableActor, FVector VectorToActor);
+	void PushMoveable(AActor* MoveableActor, FVector VectorToActor);
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "BombThrower|Damage")
 	void DamageableHit(AActor* DamageableActor, float Damage);
