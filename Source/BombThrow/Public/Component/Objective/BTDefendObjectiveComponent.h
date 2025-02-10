@@ -7,6 +7,7 @@
 #include "Moveable/MoveableBase.h"
 #include "BTDefendObjectiveComponent.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDefendObjectiveDestroyed);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class BOMBTHROW_API UBTDefendObjectiveComponent : public UActorComponent
@@ -30,5 +31,6 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-		
+	UPROPERTY(BlueprintAssignable)
+	FOnDefendObjectiveDestroyed OnDefendObjectiveDestroyed;
 };

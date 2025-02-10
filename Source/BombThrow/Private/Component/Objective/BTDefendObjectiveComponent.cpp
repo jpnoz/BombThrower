@@ -49,6 +49,8 @@ void UBTDefendObjectiveComponent::TickComponent(float DeltaTime, ELevelTick Tick
 
 void UBTDefendObjectiveComponent::EnableObjectiveMoveables()
 {
+	OnDefendObjectiveDestroyed.Broadcast();
+
 	for (UStaticMeshComponent* MoveableMesh : ObjectiveMoveables)
 	{
 		MoveableMesh->SetSimulatePhysics(true);

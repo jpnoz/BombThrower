@@ -74,11 +74,13 @@ void UBTInteractionComponent::AttachHeldInteractable()
 	InteractableMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	CurrentHeldInteractable->SetActorRotation(GetOwner()->GetActorRotation());
+	FVector InteractableMeshScale = CurrentHeldInteractable->GetActorRelativeScale3D();
 
 	FName SocketName = FName(TEXT("HoldSocket"));
 	FAttachmentTransformRules AttachmentRules = FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true);
 	//CurrentHeldInteractable->AttachToActor(this, AttachmentRules, Socket);
 	InteractableMesh->AttachToComponent(GetOwner()->FindComponentByClass<USkeletalMeshComponent>(), AttachmentRules, SocketName);
+	InteractableMesh->SetRelativeScale3D(InteractableMeshScale);
 }
 
 void UBTInteractionComponent::DetachHeldInteractable()
