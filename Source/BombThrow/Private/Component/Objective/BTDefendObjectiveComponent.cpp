@@ -31,10 +31,10 @@ void UBTDefendObjectiveComponent::BeginPlay()
 		}
 	}
 
-	if (GEngine)
+	/*if (GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Orange, FString::Printf(TEXT("Children: %d, Found: %d"), AllChildren.Num(), ObjectiveMoveables.Num()));
-	}
+	}*/
 }
 
 // Called every frame
