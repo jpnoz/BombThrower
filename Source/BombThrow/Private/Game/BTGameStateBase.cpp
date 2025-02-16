@@ -4,6 +4,7 @@
 #include "Game/BTGameStateBase.h"
 
 #include "Interactable/InteractableBase.h"
+#include "Component/Objective/BTDefendObjectiveComponent.h"
 
 #include "Kismet/GameplayStatics.h"
 
@@ -16,9 +17,27 @@ ABTGameStateBase::ABTGameStateBase()
 	
 }
 
+void ABTGameStateBase::BeginPlay()
+{
+	// Gather All Defend Objectives in world
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ABTDefendObjectiveBase::StaticClass(), AllDefendObjectives);
+
+	// Subscribe to each objective's Destroyed Event
+	for (AActor* Objective : AllDefendObjectives)
+	{
+		ABTDefendObjectiveBase* DefendObjective = Cast<ABTDefendObjectiveBase>(Objective);
+
+		DefendObjective->DefendObjectiveComponent->OnDefendObjectiveDestroyed.AddDynamic(this, &ABTGameStateBase::OnDefendObjectiveDestroyed);
+	}
+}
+
 void ABTGameStateBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AInteractableBase::StaticClass(), AllInteractables);
+}
+
+void ABTGameStateBase::OnDefendObjectiveDestroyed_Implementation(AActor* DestroyedObjective)
+{
 }

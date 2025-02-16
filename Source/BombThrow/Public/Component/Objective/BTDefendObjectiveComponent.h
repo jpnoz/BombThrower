@@ -7,7 +7,7 @@
 #include "Moveable/MoveableBase.h"
 #include "BTDefendObjectiveComponent.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDefendObjectiveDestroyed);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDefendObjectiveDestroyed, AActor*, DestroyedObjective);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class BOMBTHROW_API UBTDefendObjectiveComponent : public UActorComponent

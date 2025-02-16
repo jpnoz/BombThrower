@@ -10,8 +10,6 @@ UBTDefendObjectiveComponent::UBTDefendObjectiveComponent()
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-
-	// ...
 }
 
 
@@ -44,15 +42,14 @@ void UBTDefendObjectiveComponent::TickComponent(float DeltaTime, ELevelTick Tick
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	
 }
 
 void UBTDefendObjectiveComponent::EnableObjectiveMoveables()
 {
-	OnDefendObjectiveDestroyed.Broadcast();
-
 	for (UStaticMeshComponent* MoveableMesh : ObjectiveMoveables)
 	{
 		MoveableMesh->SetSimulatePhysics(true);
 	}
+
+	OnDefendObjectiveDestroyed.Broadcast(GetOwner());
 }

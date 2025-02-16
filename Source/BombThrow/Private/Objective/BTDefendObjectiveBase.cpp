@@ -18,20 +18,12 @@ ABTDefendObjectiveBase::ABTDefendObjectiveBase()
 void ABTDefendObjectiveBase::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 // Called every frame
 void ABTDefendObjectiveBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
-// Called to bind functionality to input
-void ABTDefendObjectiveBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-}
 
