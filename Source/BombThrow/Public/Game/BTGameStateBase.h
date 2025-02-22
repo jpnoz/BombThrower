@@ -17,6 +17,7 @@ public:
 
 	const int32 MaxInteractables = 2048;
 
+	TArray<AActor*> AllPlayers;
 	TArray<AActor*> AllInteractables;
 	TArray<AActor*> AllDefendObjectives;
 
@@ -24,6 +25,7 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
+	void GetAllPlayerActors();
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "GameState|Objective")
 	void OnDefendObjectiveDestroyed(AActor* DestroyedObjective);

@@ -3,6 +3,7 @@
 
 #include "Game/BTGameStateBase.h"
 
+#include "GameFramework/PlayerState.h"
 #include "Interactable/InteractableBase.h"
 #include "Component/Objective/BTDefendObjectiveComponent.h"
 
@@ -35,7 +36,20 @@ void ABTGameStateBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	GetAllPlayerActors();
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AInteractableBase::StaticClass(), AllInteractables);
+}
+
+void ABTGameStateBase::GetAllPlayerActors()
+{
+	// Clear Current Array of AllPlayers before regathering
+	AllPlayers.Empty();
+
+	TArray<APlayerState*> AllPlayerStates = PlayerArray;
+	for (APlayerState* CurrentPlayerState : AllPlayerStates)
+	{
+		AllPlayers.Add(CurrentPlayerState->GetPawn());
+	}
 }
 
 void ABTGameStateBase::OnDefendObjectiveDestroyed_Implementation(AActor* DestroyedObjective)

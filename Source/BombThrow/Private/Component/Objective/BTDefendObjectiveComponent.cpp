@@ -48,8 +48,14 @@ void UBTDefendObjectiveComponent::EnableObjectiveMoveables()
 {
 	for (UStaticMeshComponent* MoveableMesh : ObjectiveMoveables)
 	{
-		MoveableMesh->SetSimulatePhysics(true);
+		if (MoveableMesh)
+		{
+			MoveableMesh->SetSimulatePhysics(true);
+		}
 	}
+
+	// Remove Moveables from Array to prevent repeated enables
+	ObjectiveMoveables.Empty();
 
 	OnDefendObjectiveDestroyed.Broadcast(GetOwner());
 }

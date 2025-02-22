@@ -27,6 +27,15 @@ void UBTInteractionComponent::UpdateHeldInteractable()
 {
 	TArray<AActor*> HeldInteractables;
 	GetOwner()->GetAttachedActors(HeldInteractables);
+
+	for (AActor* HeldInteractable : HeldInteractables)
+	{
+		if (!HeldInteractable || HeldInteractable->IsPendingKill())
+		{
+			HeldInteractables.Remove(HeldInteractable);
+		}
+	}
+
 	bIsHoldingInteractable = true;
 	if (HeldInteractables.Num() == 0)
 	{
@@ -37,6 +46,11 @@ void UBTInteractionComponent::UpdateHeldInteractable()
 
 void UBTInteractionComponent::PickUpInteractable(AActor* ActorDetected)
 {
+	if (!ActorDetected)
+	{
+		return;
+	}
+
 	FVector InteractableLocation = ActorDetected->GetActorLocation();
 
 	if (CurrentHeldInteractable)
