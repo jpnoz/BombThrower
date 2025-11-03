@@ -113,6 +113,8 @@ void ABTEnemyBase::UpdateMovementVector()
 {
 	if (!bCanAddMovementInput)
 	{
+		CurrentMovementVector = FVector::Zero();
+		LastMovementVector = FVector::Zero();
 		return;
 	}
 

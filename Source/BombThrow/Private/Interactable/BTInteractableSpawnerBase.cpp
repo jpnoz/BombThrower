@@ -58,7 +58,7 @@ void ABTInteractableSpawnerBase::SpawnInteractable()
 
 	ABTGameStateBase* GameState = Cast<ABTGameStateBase>(UGameplayStatics::GetGameState(GetWorld()));
 
-	if (GameState->AllInteractables.Num() >= GameState->MaxInteractables || SpawnedInteractables.Num() >= CurrentSpawnParameters.SpawnLimit)
+	if ((CurrentSpawnParameters.SpawnType == ESpawnType::StreamSpawn && SpawnedInteractables.Num() >= CurrentSpawnParameters.SpawnLimit) || GameState->AllInteractables.Num() >= GameState->MaxInteractables)
 	{
 		return;
 	}
