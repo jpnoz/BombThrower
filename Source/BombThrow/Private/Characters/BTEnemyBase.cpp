@@ -65,18 +65,6 @@ void ABTEnemyBase::BeginPlay()
 	CurrentSpawnParameters = BaseSpawnParameters;
 }
 
-TArray<FVector> ABTEnemyBase::GetAllActorLocations(TArray<AActor*> Actors)
-{
-	TArray<FVector> AllActorLocations = TArray<FVector>();
-
-	for (AActor* Actor : Actors)
-	{
-		AllActorLocations.Add(Actor->GetActorLocation());
-	}
-
-	return AllActorLocations;
-}
-
 // Called every frame
 void ABTEnemyBase::Tick(float DeltaTime)
 {
@@ -89,13 +77,16 @@ void ABTEnemyBase::Tick(float DeltaTime)
 		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Orange, FString::Printf(TEXT("Speed: %f"), CurrentMovementVector.SquaredLength()));
 	}*/
 
-	if (!bCanAddMovementInput)
+	if (HealthComponent->CurrentHealth <= 0 && bIsAlive)
 	{
-		CurrentMovementVector = FVector::Zero();
-		LastMovementVector = FVector::Zero();
+		HandleDeath();
+	}
+	
+	if (!bIsAlive)
+	{
 		return;
 	}
-
+	
 	AddMovementInput(CurrentMovementVector, CurrentMovementVector.SquaredLength() / (MaxWalkSpeedThreshold * MaxWalkSpeedThreshold));
 	LastMovementVector -= LastMovementVector * InertiaDecayRate * DeltaTime;
 
@@ -109,12 +100,22 @@ void ABTEnemyBase::Tick(float DeltaTime)
 	//DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + CurrentAimVector, FColor::Green, false, 0.1f);
 }
 
+TArray<FVector> ABTEnemyBase::GetAllActorLocations(TArray<AActor*> Actors)
+{
+	TArray<FVector> AllActorLocations = TArray<FVector>();
+
+	for (AActor* Actor : Actors)
+	{
+		AllActorLocations.Add(Actor->GetActorLocation());
+	}
+
+	return AllActorLocations;
+}
+
 void ABTEnemyBase::UpdateMovementVector()
 {
-	if (!bCanAddMovementInput)
+	if (!bIsAlive)
 	{
-		CurrentMovementVector = FVector::Zero();
-		LastMovementVector = FVector::Zero();
 		return;
 	}
 
@@ -142,12 +143,15 @@ void ABTEnemyBase::UpdateMovementVector()
 		//DrawDebugSphere(GetWorld(), TargetPosition, PlayerAimingRadius / 4.0f, 32, FColor::Cyan, false, 2.0f);
 		OnAIMovementRequired(TargetPosition);
 	}
+	else
+	{
+		OnMovementInput();
+	}
 }
 
 FVector ABTEnemyBase::CalculateMovementVector()
 {
 	FVector NewMovementVector = FVector::Zero();
-	FVector LateralMovementVector = FVector::Zero();
 
 	FVector BombMovementVector = CalculateBombAvoidance() * BombMovementWeight;
 	FVector WallMovementVector = CalculateWallAvoidance() * WallMovementWeight;
@@ -165,35 +169,28 @@ FVector ABTEnemyBase::CalculateMovementVector()
 
 FVector ABTEnemyBase::DetermineTargetLocation()
 {
-	// Gather Player Positions
 	TArray<FVector> AllPlayerDistances = GetAllActorLocations(GameState->AllPlayers);
-
-	// Gather Defend Objective Positions
 	TArray<FVector> AllDefendObjectiveDistances = GetAllActorLocations(GameState->AllDefendObjectives);
 
-	// Create Variable to hold final Target
 	FVector TargetVector = FVector::Zero();
 
-	// Find Closest Player and Objective Vectors
 	FVector ClosestPlayerDistance = FindClosestTargetDirection(AllPlayerDistances, PlayerDetectionRadius);
 	FVector ClosestDefendObjectiveDistance = FindClosestTargetDirection(AllDefendObjectiveDistances);
 	
-	// No Defend Objectives => Target Player
 	if (GameState->AllDefendObjectives.Num() == 0)
 	{
+		// No Defend Objectives => Target Player
 		TargetVector = ClosestPlayerDistance;
 	}
-
-	// No Players Detected => Target Objectives
-	if (ClosestPlayerDistance == FVector::Zero())
+	else if (ClosestPlayerDistance == FVector::Zero())
 	{
+		// No Players Detected => Target Objectives
 		TargetVector = ClosestDefendObjectiveDistance;
 	}
-
-	// Otherwise, Target whichever's farther
-	// Preferring Objectives in the case of a tie
-	if (ClosestDefendObjectiveDistance.SquaredLength() >= ClosestPlayerDistance.SquaredLength())
+	else if (ClosestDefendObjectiveDistance.SquaredLength() >= ClosestPlayerDistance.SquaredLength())
 	{
+		// Otherwise, Target whichever's farther
+		// Preferring Objectives in the case of a tie
 		TargetVector = ClosestDefendObjectiveDistance;
 	}
 	else
@@ -202,7 +199,7 @@ FVector ABTEnemyBase::DetermineTargetLocation()
 	}
 
 	//DrawDebugSphere(GetWorld(), GetActorLocation() + TargetVector, 150.0f, 32, FColor::Orange, false, 2.0f);
-
+	
 	// Vectors used in determining closest Objects 
 	// are vectors between the Enemy and Target
 	// Add Enemy's Location to get actual World Location
@@ -223,9 +220,8 @@ FVector ABTEnemyBase::DetermineTargetLocation()
 
 void ABTEnemyBase::UpdateAimVector()
 {
-	if (HealthComponent->CurrentHealth <= 0)
+	if (!bIsAlive)
 	{
-		CurrentSpawnParameters.bCanSpawn = false;
 		return;
 	}
 	
@@ -245,6 +241,7 @@ void ABTEnemyBase::UpdateAimVector()
 FVector ABTEnemyBase::CalculateAimVector()
 {
 	FVector NewAimVector = DetermineTargetLocation() - GetActorLocation();
+	//DrawDebugSphere(GetWorld(), NewAimVector + GetActorLocation(), (PlayerAimingRadius / 4.0f) + 10, 32, FColor::Orange, false, 2.0f);
 
 	// Limit Throwing Vector to enemy's max throw force
 	if (NewAimVector.SquaredLength() > ThrowForce * ThrowForce)
@@ -258,9 +255,13 @@ FVector ABTEnemyBase::CalculateAimVector()
 		NewAimVector = FVector::Zero();
 	}
 	
-	if (!NewAimVector.Equals(FVector::Zero()))
+	if (!(NewAimVector.X == 0.0f && NewAimVector.Y == 0.0f))
 	{
 		NewAimVector += FVector(0, 0, ThrowForce);
+	}
+	else
+	{
+		NewAimVector = FVector::Zero();
 	}
 	
 	return NewAimVector;
@@ -389,9 +390,35 @@ FVector ABTEnemyBase::FindClosestTargetDirection(TArray<FVector> TargetPositions
 	return ClosestEnemyToTargetVector;
 }
 
+void ABTEnemyBase::HandleDeath()
+{
+	bIsAlive = false;
+
+	bCanAddMovementInput = false;
+	CurrentMovementVector = FVector::Zero();
+	LastMovementVector = FVector::Zero();
+
+	CurrentSpawnParameters.bCanSpawn = false;
+
+	OnDeath();
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Cyan, FString::Printf(TEXT("DEAD")));
+	}
+}
+
+void ABTEnemyBase::OnMovementInput_Implementation()
+{
+}
+
 void ABTEnemyBase::OnAIMovementRequired_Implementation(FVector TargetPosition)
 {
 	//DrawDebugSphere(GetWorld(), TargetPosition, 150.0f, 32, FColor::Orange, false, 2.0f);
+}
+
+void ABTEnemyBase::OnDeath_Implementation()
+{
 }
 
 bool ABTEnemyBase::bSphereTrace(FVector StartLocation, FVector EndLocation, TArray<FHitResult>& TraceResults)

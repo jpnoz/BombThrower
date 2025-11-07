@@ -19,6 +19,7 @@ public:
 
 	TArray<AActor*> AllPlayers;
 	TArray<AActor*> AllInteractables;
+	UPROPERTY(BlueprintReadWrite, Category = "GameState|Objective")
 	TArray<AActor*> AllDefendObjectives;
 
 protected:
