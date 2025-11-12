@@ -22,3 +22,18 @@ ADamageableBase::ADamageableBase()
 	}
 }
 
+void ADamageableBase::OnDeath()
+{
+	bIsAlive = false;
+
+	OnDamageableDeath.Broadcast(this);
+
+	DamageableDeath();
+}
+
+void ADamageableBase::DamageableDeath_Implementation()
+{
+}
+
+
+

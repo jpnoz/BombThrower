@@ -157,9 +157,12 @@ void ABTBombBase::PushActorsInRadius()
 		ActorMesh->SetSimulatePhysics(true);
 		ActorMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
-		DistanceToActor.Normalize(1.0f);
-		FVector ExplosionImpulse = DistanceToActor * ExplosionForce * ActorMesh->GetMass();
-		ActorMesh->AddImpulse(ExplosionImpulse);
+		if (ActorMesh->IsSimulatingPhysics())
+		{
+			DistanceToActor.Normalize(1.0f);
+			FVector ExplosionImpulse = DistanceToActor * ExplosionForce * ActorMesh->GetMass();
+			ActorMesh->AddImpulse(ExplosionImpulse);
+		}
 	}
 
 	// Checking Moveables and Damageables
