@@ -7,6 +7,8 @@
 #include "GameFramework/Character.h"
 #include "DamageableBase.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDamageableDeath, AActor*, KilledDamageable);
+
 // TO DO: Find a way to have ADamageableBase extend from AMoveableBase
 UCLASS()
 class BOMBTHROW_API ADamageableBase : public ACharacter
@@ -20,4 +22,16 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Damageable")
 	class UBTHealthComponent* HealthComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Damageable")
+	bool bIsAlive;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnDamageableDeath OnDamageableDeath;
+
+	virtual void OnDeath();
+
+	// Must call Parent Function for Death Handling
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Damageable")
+	void DamageableDeath();
+	void DamageableDeath_Implementation();
 };

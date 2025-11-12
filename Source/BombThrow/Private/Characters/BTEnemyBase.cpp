@@ -8,10 +8,12 @@
 #include "Game/BTGameStateBase.h"
 #include "Interactable/BTBombBase.h"
 
-#include "GameFramework/PlayerState.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
+
+#include "NavigationSystem.h"
+#include "NavigationData.h"
 
 #include "DrawDebugHelpers.h"
 
@@ -20,6 +22,8 @@ ABTEnemyBase::ABTEnemyBase()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
+	bCanAddMovementInput = true;
 
 	BombDetectionRadius = 1500.0f;
 	WallDetectionRadius = 500.0f;
@@ -66,14 +70,24 @@ void ABTEnemyBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	//DrawDebugSphere(GetWorld(), GetActorLocation(), PlayerAimingRadius, 32, FColor::Yellow, false, 0.1f);
+	//DrawDebugSphere(GetWorld(), GetActorLocation(), PlayerDetectionRadius, 32, FColor::Yellow, false, 0.1f);
 
 	/*if (GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Orange, FString::Printf(TEXT("Speed: %f"), CurrentMovementVector.SquaredLength()));
 	}*/
 
-	AddMovementInput(CurrentMovementVector, CurrentMovementVector.SquaredLength() / MaxWalkSpeedThreshold * MaxWalkSpeedThreshold);
+	if (HealthComponent->CurrentHealth <= 0 && bIsAlive)
+	{
+		OnDeath();
+	}
+	
+	if (!bIsAlive)
+	{
+		return;
+	}
+	
+	AddMovementInput(CurrentMovementVector, CurrentMovementVector.SquaredLength() / (MaxWalkSpeedThreshold * MaxWalkSpeedThreshold));
 	LastMovementVector -= LastMovementVector * InertiaDecayRate * DeltaTime;
 
 	if (LastMovementVector.SquaredLength() < 0.1f)
@@ -86,8 +100,25 @@ void ABTEnemyBase::Tick(float DeltaTime)
 	//DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + CurrentAimVector, FColor::Green, false, 0.1f);
 }
 
+TArray<FVector> ABTEnemyBase::GetAllActorLocations(TArray<AActor*> Actors)
+{
+	TArray<FVector> AllActorLocations = TArray<FVector>();
+
+	for (AActor* Actor : Actors)
+	{
+		AllActorLocations.Add(Actor->GetActorLocation());
+	}
+
+	return AllActorLocations;
+}
+
 void ABTEnemyBase::UpdateMovementVector()
 {
+	if (!bIsAlive)
+	{
+		return;
+	}
+
 	if (LastMovementVector.Equals(FVector::Zero()))
 	{
 		LastMovementVector = CurrentMovementVector;
@@ -104,19 +135,23 @@ void ABTEnemyBase::UpdateMovementVector()
 	}
 
 	// If CurrentMovement is still 0
-	// Move toward player
+	// Decide Target between Objective or Player
+	// Then move to Target
 	if (CurrentMovementVector.Equals(FVector::Zero()))
 	{
-		FVector TargetPlayerPosition = GetActorLocation() + FindClosestPlayerDirection(PlayerDetectionRadius);
-		//DrawDebugSphere(GetWorld(), TargetPlayerPosition, 150.0f, 32, FColor::Orange, false, 2.0f);
-		MoveToPlayer(TargetPlayerPosition);
+		FVector TargetPosition = DetermineTargetLocation();
+		//DrawDebugSphere(GetWorld(), TargetPosition, PlayerAimingRadius / 4.0f, 32, FColor::Cyan, false, 2.0f);
+		OnAIMovementRequired(TargetPosition);
+	}
+	else
+	{
+		OnMovementInput();
 	}
 }
 
 FVector ABTEnemyBase::CalculateMovementVector()
 {
 	FVector NewMovementVector = FVector::Zero();
-	FVector LateralMovementVector = FVector::Zero();
 
 	FVector BombMovementVector = CalculateBombAvoidance() * BombMovementWeight;
 	FVector WallMovementVector = CalculateWallAvoidance() * WallMovementWeight;
@@ -132,11 +167,61 @@ FVector ABTEnemyBase::CalculateMovementVector()
 	return NewMovementVector;
 }
 
+FVector ABTEnemyBase::DetermineTargetLocation()
+{
+	TArray<FVector> AllPlayerDistances = GetAllActorLocations(GameState->AllPlayers);
+	TArray<FVector> AllDefendObjectiveDistances = GetAllActorLocations(GameState->AllDefendObjectives);
+
+	FVector TargetVector = FVector::Zero();
+
+	FVector ClosestPlayerDistance = FindClosestTargetDirection(AllPlayerDistances, PlayerDetectionRadius);
+	FVector ClosestDefendObjectiveDistance = FindClosestTargetDirection(AllDefendObjectiveDistances);
+	
+	if (GameState->AllDefendObjectives.Num() == 0)
+	{
+		// No Defend Objectives => Target Player
+		TargetVector = ClosestPlayerDistance;
+	}
+	else if (ClosestPlayerDistance == FVector::Zero())
+	{
+		// No Players Detected => Target Objectives
+		TargetVector = ClosestDefendObjectiveDistance;
+	}
+	else if (ClosestDefendObjectiveDistance.SquaredLength() >= ClosestPlayerDistance.SquaredLength())
+	{
+		// Otherwise, Target whichever's farther
+		// Preferring Objectives in the case of a tie
+		TargetVector = ClosestDefendObjectiveDistance;
+	}
+	else
+	{
+		TargetVector = ClosestPlayerDistance;
+	}
+
+	//DrawDebugSphere(GetWorld(), GetActorLocation() + TargetVector, 150.0f, 32, FColor::Orange, false, 2.0f);
+	
+	// Vectors used in determining closest Objects 
+	// are vectors between the Enemy and Target
+	// Add Enemy's Location to get actual World Location
+	TargetVector += GetActorLocation();
+
+	// Ensure that the AI can navigate to the Target Location
+	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+	const FNavAgentProperties& AgentProps = Controller->GetNavAgentPropertiesRef();
+	if (NavSys != nullptr)
+	{
+		FNavLocation ProjectedLocation;
+		NavSys->ProjectPointToNavigation(TargetVector, ProjectedLocation, FVector(500.0f, 500.0f, 300.0f), &AgentProps);
+		TargetVector = ProjectedLocation.Location;
+	}
+
+	return TargetVector;
+}
+
 void ABTEnemyBase::UpdateAimVector()
 {
-	if (HealthComponent->CurrentHealth <= 0)
+	if (!bIsAlive)
 	{
-		CurrentSpawnParameters.bCanSpawn = false;
 		return;
 	}
 	
@@ -155,7 +240,8 @@ void ABTEnemyBase::UpdateAimVector()
 
 FVector ABTEnemyBase::CalculateAimVector()
 {
-	FVector NewAimVector = FindClosestPlayerDirection(PlayerAimingRadius);
+	FVector NewAimVector = DetermineTargetLocation() - GetActorLocation();
+	//DrawDebugSphere(GetWorld(), NewAimVector + GetActorLocation(), (PlayerAimingRadius / 4.0f) + 10, 32, FColor::Orange, false, 2.0f);
 
 	// Limit Throwing Vector to enemy's max throw force
 	if (NewAimVector.SquaredLength() > ThrowForce * ThrowForce)
@@ -169,9 +255,13 @@ FVector ABTEnemyBase::CalculateAimVector()
 		NewAimVector = FVector::Zero();
 	}
 	
-	if (!NewAimVector.Equals(FVector::Zero()))
+	if (!(NewAimVector.X == 0.0f && NewAimVector.Y == 0.0f))
 	{
 		NewAimVector += FVector(0, 0, ThrowForce);
+	}
+	else
+	{
+		NewAimVector = FVector::Zero();
 	}
 	
 	return NewAimVector;
@@ -275,36 +365,49 @@ TArray<FVector> ABTEnemyBase::FindBombPositions()
 	return BombToEnemyVectors;
 }
 
-FVector ABTEnemyBase::FindClosestPlayerDirection(float MaxRange)
+FVector ABTEnemyBase::FindClosestTargetDirection(TArray<FVector> TargetPositions, float MaxRange)
 {
-	TArray<APlayerState*> AllPlayers = GameState->PlayerArray;
-
-	FVector ClosestEnemyToPlayerVector = FVector::Zero();
-	for (int i = 0; i < AllPlayers.Num(); i++)
+	FVector ClosestEnemyToTargetVector = FVector::Zero();
+	for (int i = 0; i < TargetPositions.Num(); i++)
 	{
-		APlayerState* PlayerToCheck = AllPlayers[i];
+		FVector TargetVector = TargetPositions[i];
 
-		FVector DistanceToPlayer = PlayerToCheck->GetPawn()->GetActorLocation() - GetActorLocation();
+		FVector DistanceToTarget = TargetVector - GetActorLocation();
 
-		if (DistanceToPlayer.SquaredLength() > (MaxRange * MaxRange))
+		if ((MaxRange != INFINITY) && (DistanceToTarget.SquaredLength() > (MaxRange * MaxRange)))
 		{
 			continue;
 		}
 
 		//DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + DistanceToPlayer, FColor::Cyan, false, 1.0f);
 
-		if (i == 0 || DistanceToPlayer.SquaredLength() < ClosestEnemyToPlayerVector.SquaredLength())
+		if (i == 0 || DistanceToTarget.SquaredLength() < ClosestEnemyToTargetVector.SquaredLength())
 		{
-			ClosestEnemyToPlayerVector = DistanceToPlayer;
+			ClosestEnemyToTargetVector = DistanceToTarget;
 		}
 	}
 
-	return ClosestEnemyToPlayerVector;
+	return ClosestEnemyToTargetVector;
 }
 
-void ABTEnemyBase::MoveToPlayer_Implementation(FVector PlayerPosition)
+void ABTEnemyBase::OnDeath()
 {
-	//DrawDebugSphere(GetWorld(), PlayerPosition, 150.0f, 32, FColor::Orange, false, 2.0f);
+	Super::OnDeath();
+
+	bCanAddMovementInput = false;
+	CurrentMovementVector = FVector::Zero();
+	LastMovementVector = FVector::Zero();
+
+	CurrentSpawnParameters.bCanSpawn = false;
+}
+
+void ABTEnemyBase::OnMovementInput_Implementation()
+{
+}
+
+void ABTEnemyBase::OnAIMovementRequired_Implementation(FVector TargetPosition)
+{
+	//DrawDebugSphere(GetWorld(), TargetPosition, 150.0f, 32, FColor::Orange, false, 2.0f);
 }
 
 bool ABTEnemyBase::bSphereTrace(FVector StartLocation, FVector EndLocation, TArray<FHitResult>& TraceResults)

@@ -8,6 +8,13 @@
 
 class AInteractableBase;
 
+UENUM(BlueprintType)
+enum class ESpawnType : uint8
+{
+	StreamSpawn UMETA(DisplayName = "Stream Spawn"),
+	WaveSpawn UMETA(DisplayName = "Wave Spawn")
+};
+
 USTRUCT(BlueprintType)
 struct FSpawnerParameters
 {
@@ -17,11 +24,19 @@ struct FSpawnerParameters
 	bool bCanSpawn;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	ESpawnType SpawnType;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float SpawnTime;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = "SpawnType == ESpawnType::WaveSpawn"))
+	float SpawnWaveInterval;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float SpawnRadius;
 
+	// In Stream Mode, Max Active Interactables from this Spawner
+	// In Wave Mode, number of Interactables to spawn per wave
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 SpawnLimit;
 
@@ -40,7 +55,9 @@ struct FSpawnerParameters
 	FSpawnerParameters()
 	{
 		bCanSpawn = true;
+		SpawnType = ESpawnType::StreamSpawn;
 		SpawnTime = 5.0f;
+		SpawnWaveInterval = 10.0f;
 		SpawnRadius = 0.0f;
 		SpawnLimit = 1;
 		BaseSpawnImpulse = FVector::Zero();

@@ -16,7 +16,8 @@ public class BombThrow : ModuleRules
 			"EnhancedInput", 
 			"GameplayTags", 
 			"Niagara",
-			"AIModule"
+			"AIModule",
+			"NavigationSystem"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });

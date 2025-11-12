@@ -17,6 +17,9 @@ public:
 	// Sets default values for this character's properties
 	ABTEnemyBase();
 
+	UPROPERTY(BlueprintReadWrite, Category = "Enemy|Movement")
+	bool bCanAddMovementInput;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception")
 	float BombDetectionRadius;
 
@@ -78,9 +81,12 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	TArray<FVector> GetAllActorLocations(TArray<AActor*> Actors);
+
 	UFUNCTION(BlueprintCallable, Category = "Enemy|Movement")
 	void UpdateMovementVector();
 	FVector CalculateMovementVector();
+	FVector DetermineTargetLocation();
 
 	UFUNCTION(BlueprintCallable, Category = "Enemy|Aim")
 	void UpdateAimVector();
@@ -90,11 +96,17 @@ protected:
 	FVector CalculateWallAvoidance();
 
 	TArray<FVector> FindBombPositions();
-	FVector FindClosestPlayerDirection(float MaxRange);
+	FVector FindClosestTargetDirection(TArray<FVector> TargetPositions, float MaxRange = INFINITY);
+
+	virtual void OnDeath() override;
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Enemy|Movement")
-	void MoveToPlayer(FVector PlayerPosition);
-	void MoveToPlayer_Implementation(FVector PlayerPosition);
+	void OnMovementInput();
+	void OnMovementInput_Implementation();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Enemy|Movement")
+	void OnAIMovementRequired(FVector TargetPosition);
+	void OnAIMovementRequired_Implementation(FVector TargetPosition);
 
 	bool bSphereTrace(FVector Location, FVector EndLocation, TArray<FHitResult>& TraceResults);
 

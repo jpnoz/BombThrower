@@ -15,6 +15,6 @@ public:
 	// Sets default values for this actor's properties
 	AMoveableBase();
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interactable")
+	UPROPERTY(EditAnywhere, Category = "Interactable")
 	class UStaticMeshComponent* MoveableMesh;
 };
