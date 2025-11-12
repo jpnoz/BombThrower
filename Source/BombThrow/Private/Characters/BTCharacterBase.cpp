@@ -6,6 +6,7 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 
+#include "Component/BTHealthComponent.h"
 #include "Component/BTMovementComponent.h"
 #include "Component/BTInteractionComponent.h"
 #include "Component/BTCharacterInputComponent.h"
@@ -42,7 +43,10 @@ void ABTCharacterBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-
+	if (HealthComponent->CurrentHealth <= 0 && bIsAlive)
+	{
+		OnDeath();
+	}
 }
 
 // Called to bind functionality to input

@@ -98,6 +98,8 @@ protected:
 	TArray<FVector> FindBombPositions();
 	FVector FindClosestTargetDirection(TArray<FVector> TargetPositions, float MaxRange = INFINITY);
 
+	virtual void OnDeath() override;
+
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Enemy|Movement")
 	void OnMovementInput();
 	void OnMovementInput_Implementation();
@@ -105,12 +107,6 @@ protected:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Enemy|Movement")
 	void OnAIMovementRequired(FVector TargetPosition);
 	void OnAIMovementRequired_Implementation(FVector TargetPosition);
-
-	void HandleDeath();
-
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Damageable")
-	void OnDeath();
-	void OnDeath_Implementation();
 
 	bool bSphereTrace(FVector Location, FVector EndLocation, TArray<FHitResult>& TraceResults);
 

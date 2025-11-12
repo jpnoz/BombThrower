@@ -79,7 +79,7 @@ void ABTEnemyBase::Tick(float DeltaTime)
 
 	if (HealthComponent->CurrentHealth <= 0 && bIsAlive)
 	{
-		HandleDeath();
+		OnDeath();
 	}
 	
 	if (!bIsAlive)
@@ -390,22 +390,15 @@ FVector ABTEnemyBase::FindClosestTargetDirection(TArray<FVector> TargetPositions
 	return ClosestEnemyToTargetVector;
 }
 
-void ABTEnemyBase::HandleDeath()
+void ABTEnemyBase::OnDeath()
 {
-	bIsAlive = false;
+	Super::OnDeath();
 
 	bCanAddMovementInput = false;
 	CurrentMovementVector = FVector::Zero();
 	LastMovementVector = FVector::Zero();
 
 	CurrentSpawnParameters.bCanSpawn = false;
-
-	OnDeath();
-
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Cyan, FString::Printf(TEXT("DEAD")));
-	}
 }
 
 void ABTEnemyBase::OnMovementInput_Implementation()
@@ -415,10 +408,6 @@ void ABTEnemyBase::OnMovementInput_Implementation()
 void ABTEnemyBase::OnAIMovementRequired_Implementation(FVector TargetPosition)
 {
 	//DrawDebugSphere(GetWorld(), TargetPosition, 150.0f, 32, FColor::Orange, false, 2.0f);
-}
-
-void ABTEnemyBase::OnDeath_Implementation()
-{
 }
 
 bool ABTEnemyBase::bSphereTrace(FVector StartLocation, FVector EndLocation, TArray<FHitResult>& TraceResults)
