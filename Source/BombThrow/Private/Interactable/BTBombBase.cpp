@@ -6,7 +6,6 @@
 #include "Game/BTGameStateBase.h"
 #include "Components/CapsuleComponent.h"
 #include "Characters/DamageableBase.h"
-#include "Characters/BTCharacterBase.h"
 #include "Interactable/BTInteractableSpawnerBase.h"
 
 #include "NiagaraFunctionLibrary.h"
@@ -38,7 +37,6 @@ ABTBombBase::ABTBombBase()
 	MaxExplosionDamage = 70.0f;
 
 	bCanTick = true;
-	bFreezeOnPlayerHold = true;
 }
 
 void ABTBombBase::BeginPlay()
@@ -51,18 +49,12 @@ void ABTBombBase::BeginPlay()
 	CurrentBombColor = BaseBombColor;
 
 	CurrentFuse = FuseTimer;
-	bIsTicking = bCanTick;
 }
 
 // Called every frame
 void ABTBombBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	if (bFreezeOnPlayerHold && bCanTick)
-	{
-		bIsTicking = GetAttachParentActor() == NULL || !GetAttachParentActor()->IsA(ABTCharacterBase::StaticClass());
-	}
 
 	// Ensure correct rotation
 	SetActorRotation(FRotator(0, 0, 0));
@@ -71,9 +63,15 @@ void ABTBombBase::Tick(float DeltaTime)
 	DynamicMaterial->SetVectorParameterValue("Color", FVector4(CurrentBombColor));
 
 	// Tick down fuse every frame
-	if (bIsTicking)
+	if (bCanTick)
 	{
 		CountDown(DeltaTime);
+	}
+
+	if (CurrentFuse <= 0)
+	{
+		bCanTick = false;
+		Explode();
 	}
 }
 
@@ -84,12 +82,6 @@ void ABTBombBase::CountDown(float DeltaTime)
 	// Interpolate color values (coords in vector) as timer approaches 0
 	float FusePercent = 2.0f / (1 + FMath::Exp(CurrentFuse));
 	CurrentBombColor = UKismetMathLibrary::LinearColorLerp(BaseBombColor, FinalBombColor, FusePercent);
-
-	if (CurrentFuse <= 0)
-	{
-		bCanTick = false;
-		Explode();
-	}
 }
 
 void ABTBombBase::Explode()

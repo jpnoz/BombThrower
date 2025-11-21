@@ -76,6 +76,9 @@ public:
 	// Sets default values for this actor's properties
 	ABTInteractableSpawnerBase();
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning")
+	TSubclassOf<AInteractableBase> InteractableToSpawn;
+
 protected:
 
 	// Called when the game starts or when spawned
@@ -93,8 +96,6 @@ protected:
 	void OnParametersUpdated();
 	void OnParametersUpdated_Implementation();
 
-	UPROPERTY(EditAnywhere, Category = "Spawning")
-	TSubclassOf<AInteractableBase> InteractableToSpawn;
 	TArray<AActor*> SpawnedInteractables;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spawning")

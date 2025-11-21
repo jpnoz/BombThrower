@@ -67,6 +67,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Movement", meta = (UIMin = 1.0, UIMax = 359.0))
 	float NewMovementAngleThreshold;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Spawning")
+	TSubclassOf<AInteractableBase> InteractableToSpawn;
+
 	// NOTE: Editing Base Spawn Impulse has no effect
 	UPROPERTY(EditAnywhere, Category = "Gameplay|Spawning")
 	FSpawnerParameters BaseSpawnParameters;

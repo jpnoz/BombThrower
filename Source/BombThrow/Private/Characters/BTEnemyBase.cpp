@@ -187,7 +187,7 @@ FVector ABTEnemyBase::DetermineTargetLocation()
 		// No Players Detected => Target Objectives
 		TargetVector = ClosestDefendObjectiveDistance;
 	}
-	else if (ClosestDefendObjectiveDistance.SquaredLength() >= ClosestPlayerDistance.SquaredLength())
+	else if (ClosestDefendObjectiveDistance.SquaredLength() <= ClosestPlayerDistance.SquaredLength())
 	{
 		// Otherwise, Target whichever's farther
 		// Preferring Objectives in the case of a tie
@@ -392,13 +392,14 @@ FVector ABTEnemyBase::FindClosestTargetDirection(TArray<FVector> TargetPositions
 
 void ABTEnemyBase::OnDeath()
 {
-	Super::OnDeath();
-
 	bCanAddMovementInput = false;
 	CurrentMovementVector = FVector::Zero();
 	LastMovementVector = FVector::Zero();
 
 	CurrentSpawnParameters.bCanSpawn = false;
+
+	// Death Event must be broadcast AFTER Spawning Parameters are updated
+	Super::OnDeath();
 }
 
 void ABTEnemyBase::OnMovementInput_Implementation()
