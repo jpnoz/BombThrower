@@ -44,6 +44,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception")
 	float WallMovementWeight;
 
+	// Multiplier for bias to target players
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception")
+	float PlayerTargetingWeight;
+
+	// Multiplier for bias to target objectives
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception")
+	float ObjectiveTargetingWeight;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gameplay|Perception")
 	float PlayerDetectionRate;
 

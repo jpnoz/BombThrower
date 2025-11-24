@@ -34,6 +34,9 @@ ABTEnemyBase::ABTEnemyBase()
 	BombMovementWeight = 1.0f;
 	WallMovementWeight = 3.0f;
 
+	PlayerTargetingWeight = 0.5;
+	ObjectiveTargetingWeight = 0.5;
+
 	PlayerDetectionRate = 0.5f;
 	MovementAdjustmentRate = 0.5f;
 	AimAdjustmentRate = 1.0f;
@@ -187,9 +190,10 @@ FVector ABTEnemyBase::DetermineTargetLocation()
 		// No Players Detected => Target Objectives
 		TargetVector = ClosestDefendObjectiveDistance;
 	}
-	else if (ClosestDefendObjectiveDistance.SquaredLength() <= ClosestPlayerDistance.SquaredLength())
+	else if (ClosestDefendObjectiveDistance.SquaredLength() * ObjectiveTargetingWeight >= ClosestPlayerDistance.SquaredLength() * PlayerTargetingWeight)
 	{
 		// Otherwise, Target whichever's farther
+		// (Influenced by Targeting Weights)
 		// Preferring Objectives in the case of a tie
 		TargetVector = ClosestDefendObjectiveDistance;
 	}
