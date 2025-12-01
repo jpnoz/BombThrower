@@ -23,7 +23,7 @@ protected:
 	virtual void BeginPlay() override;
 
 	void CountDown(float DeltaTime);
-	void Explode();
+	virtual void Explode();
 	void PushActorsInRadius();
 	void PushMoveable(AActor* MoveableActor, FVector VectorToActor);
 
@@ -59,10 +59,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bomb|Explosion")
 	bool bCanTick;
-	bool bIsTicking;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bomb|Explosion")
-	bool bFreezeOnPlayerHold;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Bomb|Explosion")
 	float BlastRadius;
